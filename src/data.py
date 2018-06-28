@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # read in data
-unem = pd.read_csv('data/unemployment_usda_2007_2017.csv')
+unem = pd.read_csv('../data/unemployment_usda_2007_2017.csv')
 
 # remove first rows with data sources mentioned
 unem = unem.iloc[6:]
@@ -65,11 +65,11 @@ county_rates.area = county_rates.area.str.split(' county').str[0]
 
 
 # convert original xls to csv...
-fips = pd.read_excel('data/fips.xls')
-fips.to_csv('data/fips.csv')
+fips = pd.read_excel('../data/fips.xls')
+fips.to_csv('../data/fips.csv')
 
 # can assume that csv file exists from here on...
-fips = pd.read_csv('data/fips.csv')
+fips = pd.read_csv('../data/fips.csv')
 fips.columns = fips.iloc[0]
 fips = fips.iloc[1:]
 
@@ -79,9 +79,36 @@ fips = fips.drop(['index', 0], axis=1)
 fips['fips'] = fips[['FIPS State', 'FIPS County']].apply(lambda x: ''.join(x), axis=1)
 fips = fips.drop(columns = ['FIPS State', 'FIPS County'])
 fips.columns = ['state', 'county', 'fips']
-fips.state = fips['state'].str.lower()
 fips.county = fips['county'].str.lower()
-
+fips = fips.replace({'state': us_state_abbrev})
+fips.state = fips['state'].str.lower()
 
 # unem_rates_fips = pd.merge(unem_rates,fips, on=['county','state'])
 # unem_rates_fips = pd.merge(fips,unem_rates, on=['state','county'])
+
+
+sales = pd.read_csv('Sale_Prices_County.csv')
+
+us_state_abbrev =   {
+                    'Alabama': 'AL', 'Alaska': 'AK', 'Arizona': 'AZ', 'Arkansas': 'AR', 'California': 'CA', 'Colorado': 'CO', 'Connecticut': 'CT', 'Delaware': 'DE', 'Florida': 'FL',
+                    'Georgia': 'GA', 'Hawaii': 'HI', 'Idaho': 'ID', 'Illinois': 'IL', 'Indiana': 'IN', 'Iowa': 'IA', 'Kansas': 'KS', 'Kentucky': 'KY', 'Louisiana': 'LA', 'Maine': 'ME',
+                    'Maryland': 'MD', 'Massachusetts': 'MA', 'Michigan': 'MI', 'Minnesota': 'MN', 'Mississippi': 'MS', 'Missouri': 'MO', 'Montana': 'MT', 'Nebraska': 'NE', 'Nevada': 'NV',
+                    'New Hampshire': 'NH', 'New Jersey': 'NJ', 'New Mexico': 'NM', 'New York': 'NY', 'North Carolina': 'NC', 'North Dakota': 'ND', 'Ohio': 'OH', 'Oklahoma': 'OK', 'Oregon': 'OR',
+                    'Pennsylvania': 'PA', 'Rhode Island': 'RI', 'South Carolina': 'SC', 'South Dakota': 'SD', 'Tennessee': 'TN', 'Texas': 'TX', 'Utah': 'UT', 'Vermont': 'VT', 'Virginia': 'VA',
+                    'Washington': 'WA', 'West Virginia': 'WV', 'Wisconsin': 'WI', 'Wyoming': 'WY',
+                    }
+
+sales = sales.replace({'StateName': us_state_abbrev})
+sales.StateName = sales.StateName.str.lower()
+sales.RegionName = sales.RegionName.str.lower()
+
+sales = sales.drop(['RegionID', 'SizeRank'], axis=1)
+
+sales = sales.rename(index=str, columns={'RegionName' : 'county', 'StateName': 'state'})
+
+sales_fips = pd.merge(sales, fips, how='left', on=['county', 'state'])
+sales_fips.groupby('state').count()
+major_states = ['ca', 'co', 'fl', 'ga', 'md','ny', 'va']
+sales_major = sales_fips[sales_fips['state'].isin(major_states)]
+sales_major.groupby('state').count()
+plt.plot(sales_major.iloc[0:]) # this gives each county - need to sum them for each state 
