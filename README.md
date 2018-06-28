@@ -1,3 +1,4 @@
+# housing
 ## Housing: Looking at Property Market with Data Science
 #### Text here.
 
@@ -55,5 +56,4 @@ Decide web app or jupyter notebook.
 Text here
 
 ### References
-Text here 
-# housing
+Text here
