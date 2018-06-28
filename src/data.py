@@ -111,4 +111,8 @@ sales_fips.groupby('state').count()
 major_states = ['ca', 'co', 'fl', 'ga', 'md','ny', 'va']
 sales_major = sales_fips[sales_fips['state'].isin(major_states)]
 sales_major.groupby('state').count()
-plt.plot(sales_major.iloc[0:]) # this gives each county - need to sum them for each state 
+plt.plot(sales_major.iloc[0:]) # this gives each county - need to sum them for each state
+
+
+sales_major_states = sales_major_states.drop('2018-04', axis=1)
+sst = sales_major_states.T
