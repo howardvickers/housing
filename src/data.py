@@ -31,9 +31,9 @@ cols_num = ['u_2007', 'u_2008', 'u_2009','u_2010', 'u_2011', 'u_2012', 'u_2013',
 unem_rates[cols_num] = unem_rates[cols_num].apply(pd.to_numeric)
 
 # plot just us rates over years
-drop_counties = ['fips', 'state', 'area', 'mhi_2016', 'mhi_per_2016']
+drop_counties = ['fips', 'area', 'mhi_2016', 'mhi_per_2016']
 us_unem = unem_rates[:1].drop(columns=drop_counties)
-cols_us_unem = ['2007', '2008', '2009','2010', '2011', '2012', '2013', '2014', '2015', '2016', '2017']
+cols_us_unem = ['states', '2007', '2008', '2009','2010', '2011', '2012', '2013', '2014', '2015', '2016', '2017']
 us_unem.columns = cols_us_unem
 plt.plot(us_unem.iloc[0])
 plt.show()
@@ -56,6 +56,16 @@ states_rates = unem_rates[unem_rates['area'].isin(states)]
 states_rates = states_rates.drop(drop_counties, axis=1)
 states_rates.columns = cols_us_unem
 plt.plot(states_rates.iloc[0:])
+
+unem_fifty = states_rates.T
+unem_fifty.columns = unem_fifty.iloc[0]
+unem_fifty = unem_fifty.iloc[1:]
+unem_major = unem_fifty[major_states]
+unem_delta = unem_major.pct_change()
+unem_delta = unem_delta.iloc[1:]
+
+
+
 
 county_rates = unem_rates[~unem_rates['area'].isin(states)]
 
@@ -83,14 +93,13 @@ fips.county = fips['county'].str.lower()
 fips = fips.replace({'state': us_state_abbrev})
 fips.state = fips['state'].str.lower()
 
-# unem_rates_fips = pd.merge(unem_rates,fips, on=['county','state'])
-# unem_rates_fips = pd.merge(fips,unem_rates, on=['state','county'])
+
 
 
 sales = pd.read_csv('Sale_Prices_County.csv')
 
 us_state_abbrev =   {
-                    'Alabama': 'AL', 'Alaska': 'AK', 'Arizona': 'AZ', 'Arkansas': 'AR', 'California': 'CA', 'Colorado': 'CO', 'Connecticut': 'CT', 'Delaware': 'DE', 'Florida': 'FL',
+                    'Alabama': 'AL', 'Alaska': 'AK', 'Arizona': 'AZ', 'Arkansas': 'AR', 'California': 'CA', 'Colorado': 'CO', 'Connecticut': 'CT', 'Delaware': 'DE', 'District of Columbia': 'DC', 'Florida': 'FL',
                     'Georgia': 'GA', 'Hawaii': 'HI', 'Idaho': 'ID', 'Illinois': 'IL', 'Indiana': 'IN', 'Iowa': 'IA', 'Kansas': 'KS', 'Kentucky': 'KY', 'Louisiana': 'LA', 'Maine': 'ME',
                     'Maryland': 'MD', 'Massachusetts': 'MA', 'Michigan': 'MI', 'Minnesota': 'MN', 'Mississippi': 'MS', 'Missouri': 'MO', 'Montana': 'MT', 'Nebraska': 'NE', 'Nevada': 'NV',
                     'New Hampshire': 'NH', 'New Jersey': 'NJ', 'New Mexico': 'NM', 'New York': 'NY', 'North Carolina': 'NC', 'North Dakota': 'ND', 'Ohio': 'OH', 'Oklahoma': 'OK', 'Oregon': 'OR',
@@ -108,11 +117,89 @@ sales = sales.rename(index=str, columns={'RegionName' : 'county', 'StateName': '
 
 sales_fips = pd.merge(sales, fips, how='left', on=['county', 'state'])
 sales_fips.groupby('state').count()
+
+
 major_states = ['ca', 'co', 'fl', 'ga', 'md','ny', 'va']
 sales_major = sales_fips[sales_fips['state'].isin(major_states)]
 sales_major.groupby('state').count()
 plt.plot(sales_major.iloc[0:]) # this gives each county - need to sum them for each state
 
 
-sales_major_states = sales_major_states.drop('2018-04', axis=1)
-sst = sales_major_states.T
+sales_major = sales_major.drop('2018-04', axis=1)
+
+
+# sst = sales_major.T
+
+
+sales_major_states = sales_major.groupby('state').mean()
+
+year_ends = ['2008-12', '2009-12', '2010-12', '2011-12', '2012-12', '2013-12', '2014-12', '2015-12', '2016-12', '2017-12']
+
+sales_annual = sales_major_states[year_ends]
+
+
+# sales_annual = sales_major[year_ends]
+
+sales_delta = sales_annual.T.pct_change()
+sales_delta.replace([NaN, inf], 0)
+
+
+
+
+
+pop = pd.read_excel('nst-est2017-01.xlsx')
+pop.to_csv('pop.csv')
+
+pop = pd.read_csv('pop.csv')
+pop.columns = pop.iloc[2]
+pop = pop.iloc[3:59]
+
+pop = pop.reset_index()
+pop = pop.drop(['index', 2], axis=1)
+pop.columns = ['state', 'census_2010', 'estimate_base', '2010', '2011', '2012', '2013', '2014', '2015', '2016', '2017']
+
+pop[['census_2010', 'estimate_base', '2010']] = pop[['census_2010', 'estimate_base', '2010']].apply(pd.to_numeric)
+
+
+
+pop_states = pop.iloc[5:]
+pop_states.state = pop_states.state.str.split('.').str[1]
+pop_states = pop_states.replace({'state': us_state_abbrev})
+
+pop_states.state = pop_states.state.str.lower()
+
+
+pop_2009 = pd.read_excel('rank01.xls')
+pop_2009.to_csv('pop2009.csv')
+pop_2009 = pd.read_csv('pop2009.csv')
+
+pop_2009.columns = pop_2009.iloc[8]
+
+pop_2009 = pop_2009.iloc[9:61]
+pop_2009 = pop_2009.reset_index()
+
+pop_2009 = pop_2009.drop(['index', 8, 'Rank'], axis=1)
+
+pop_2009.columns = ['state', '2009']
+
+pop_2009['2009'] = pop_2009['2009'].apply(pd.to_numeric)
+
+pop_2009 = pop_2009.replace({'state':us_state_abbrev})
+pop_2009.state = pop_2009.state.str.lower()
+
+pop_complete = pd.merge(pop_states, pop_2009, on=['state'])
+
+new_order_cols = ['state', 'census_2010', 'estimate_base', '2009','2010', '2011', '2012', '2013', '2014', '2015', '2016', '2017']
+pop_complete = pop_complete[new_order_cols]
+
+chg_typ_cols = ['census_2010', 'estimate_base', '2009','2010']
+pop_complete[chg_typ_cols] = pop_complete[chg_typ_cols].astype(float)
+pop_complete = pop_complete.drop(['census_2010', 'estimate_base'], axis=1)
+
+pop_pivot = pop_complete.T
+
+pop_pivot.columns = pop_pivot.iloc[0]
+
+pop_pivot = pop_pivot.iloc[1:]
+
+pop_major = pop_pivot[major_states]
